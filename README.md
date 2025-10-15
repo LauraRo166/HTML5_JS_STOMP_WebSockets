@@ -163,19 +163,60 @@ En la primera:
 git commit -m "PARTE 1".
 ```
 
+---
 
 ## Parte II.
 
 Para hacer mas útil la aplicación, en lugar de capturar las coordenadas con campos de formulario, las va a capturar a través de eventos sobre un elemento de tipo \<canvas>. De la misma manera, en lugar de simplemente mostrar las coordenadas enviadas en los eventos a través de 'alertas', va a dibujar dichos puntos en el mismo canvas. Haga uso del mecanismo de captura de eventos de mouse/táctil usado en ejercicios anteriores con este fin.
 
-1. Haga que el 'callback' asociado al tópico /topic/newpoint en lugar de mostrar una alerta, dibuje un punto en el canvas en las coordenadas enviadas con los eventos recibidos. Para esto puede [dibujar un círculo de radio 1](http://www.w3schools.com/html/html5_canvas.asp).
-4. Ejecute su aplicación en varios navegadores (y si puede en varios computadores, accediendo a la aplicación mendiante la IP donde corre el servidor). Compruebe que a medida que se dibuja un punto, el mismo es replicado en todas las instancias abiertas de la aplicación.
+*1. Haga que el 'callback' asociado al tópico /topic/newpoint en lugar de mostrar una alerta, dibuje un punto en el canvas en las coordenadas enviadas con los eventos recibidos. Para esto puede [dibujar un círculo de radio 1](http://www.w3schools.com/html/html5_canvas.asp).*
 
-5. Haga commit de lo realizado, para marcar el avance de la parte 2.
+En el archivo `index.html` modificamos el body removiendo los campos de entrada
+y agregando un título.
 
-	```bash
-	git commit -m "PARTE 2".
-	```
+````html
+    <body onload="app.init()">
+        <h2>Haz clic en el canvas para dibujar un punto</h2>
+        <canvas id="canvas" width="800" height="600"></canvas>
+    </body>
+````
+
+En `app.js` ahora se retornará solamente una función de inicio donde se conectará al websocket
+y definirá el manejador de eventos para el canvas.
+
+````javascript
+init: function () {
+    var can = document.getElementById("canvas");
+    
+    //websocket connection
+    connectAndSubscribe();
+    
+    canvas.addEventListener("click", function (evt) {
+    var pos = getMousePosition(evt);
+    var pt = new Point(pos.x, pos.y);
+    console.info("Enviando punto: " + JSON.stringify(pt));
+    addPointToCanvas(pt);
+    socket.send("/topic/newpoint", {}, JSON.stringify(pt))
+    });
+},
+````
+
+*2. Ejecute su aplicación en varios navegadores (y si puede en varios computadores, accediendo a la aplicación mendiante la IP donde corre el servidor). Compruebe que a medida que se dibuja un punto, el mismo es replicado en todas las instancias abiertas de la aplicación.*
+
+Volvemos a realizar las pruebas en tres diferentes navegadores para comprobar que se 
+cree correctamente el punto y este se vea reflejado en las otras instancias.
+
+Comparamos Chrome y Edge.
+
+![AlertaNavegadores.png](img/AlertaNavegadores.png)
+
+![AlertaNavegadores2.png](img/AlertaNavegadores2.png)
+
+*3. Haga commit de lo realizado, para marcar el avance de la parte 2.*
+
+```bash
+git commit -m "PARTE 2".
+```
 
 ## Parte III.
 

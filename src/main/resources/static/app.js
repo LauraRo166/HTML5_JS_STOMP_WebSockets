@@ -13,7 +13,7 @@ var app = (function () {
         var canvas = document.getElementById("canvas");
         var ctx = canvas.getContext("2d");
         ctx.beginPath();
-        ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+        ctx.arc(point.x, point.y, 1, 0, 2 * Math.PI);
         ctx.stroke();
     };
     
@@ -55,6 +55,14 @@ var app = (function () {
             
             //websocket connection
             connectAndSubscribe();
+
+            canvas.addEventListener("click", function (evt) {
+                var pos = getMousePosition(evt);
+                var pt = new Point(pos.x, pos.y);
+                console.info("Enviando punto: " + JSON.stringify(pt));
+                addPointToCanvas(pt);
+                stompClient.send("/topic/newpoint", {}, JSON.stringify(pt));
+            });
         },
 
         publishPoint: function(px,py){
