@@ -222,20 +222,113 @@ git commit -m "PARTE 2".
 
 Ajuste la aplicación anterior para que pueda manejar más de un dibujo a la vez, manteniendo tópicos independientes. Para esto:
 
-1. Agregue un campo en la vista, en el cual el usuario pueda ingresar un número. El número corresponderá al identificador del dibujo que se creará.
-2. Modifique la aplicación para que, en lugar de conectarse y suscribirse automáticamente (en la función init()), lo haga a través de botón 'conectarse'. Éste, al oprimirse debe realizar la conexión y suscribir al cliente a un tópico que tenga un nombre dinámico, asociado el identificador ingresado, por ejemplo: /topic/newpoint.25, topic/newpoint.80, para los dibujos 25 y 80 respectivamente.
-3. De la misma manera, haga que las publicaciones se realicen al tópico asociado al identificador ingresado por el usuario.
+*1. Agregue un campo en la vista, en el cual el usuario pueda ingresar un número. El número corresponderá al identificador del dibujo que se creará.*
+
+Agregamos el campo en el body de `index.html`:
+
+````html
+    <body>
+        <h2>Seleccione un ID de dibujo y conéctese</h2>
+        <input type="number" id="drawingId" placeholder="Ingrese ID del dibujo">
+        <button onclick="app.connect()">Conectarse</button>
+    
+        <h2>Haz clic en el canvas para dibujar un punto</h2>
+        <canvas id="canvas" width="800" height="600"></canvas>
+    </body>
+````
+
+Comprobamos que se vea reflejado en la página.
+
+![campoID.png](img/campoID.png)
+
+*2. Modifique la aplicación para que, en lugar de conectarse y suscribirse automáticamente (en la función init()), lo haga a través de botón 'conectarse'. Éste, al oprimirse debe realizar la conexión y suscribir al cliente a un tópico que tenga un nombre dinámico, asociado el identificador ingresado, por ejemplo: /topic/newpoint.25, topic/newpoint.80, para los dibujos 25 y 80 respectivamente.*
+
+- Primero creamos en `app.js` la siguiente variable:
+
+````javascript
+var drawId = null;
+````
+
+- Modificamos la función de inicio a una donde solo se iniciará cuando
+se de clic al botón de conectarse.
+
+````javascript
+connect: function () {
+    drawingId = document.getElementById("drawingId").value;
+    if (!drawingId) {
+        alert("Por favor, ingrese un ID de dibujo.");
+        return;
+    }
+
+    console.info(`Conectando al dibujo ${drawingId}...`);
+    connectAndSubscribe();
+    
+````
+
+- Modificamos `connectAndSuscribe` concatenando el tópico con el id del dibujo guardado 
+en la variable privada. Realizamos la suscripción.
+
+````javascript
+    var connectAndSubscribe = function () {
+    console.info('Conectando a WebSocket...');
+    var socket = new SockJS('/stompendpoint');
+    stompClient = Stomp.over(socket);
+
+    stompClient.connect({}, function (frame) {
+        console.log('Conectado: ' + frame);
+
+        var topic = `/topic/newpoint.${drawingId}`;
+        stompClient.subscribe(topic, function (message) {
+            var receivedPoint = JSON.parse(message.body);
+            console.log(`Punto recibido en ${topic}:`, receivedPoint);
+            addPointToCanvas(receivedPoint);
+        });
+
+        console.log(`Suscrito a ${topic}`);
+    });
+};
+````
+
+*3. De la misma manera, haga que las publicaciones se realicen al tópico asociado al identificador ingresado por el usuario.*
+
+Dentro de la función de conectar en el retorno se define el manejador de eventos para el 
+canvas y se cambia el tópico al cual se mandará el punto.
+
+````javascript
+    var canvas = document.getElementById("canvas");
+    canvas.addEventListener("click", function (evt) {
+    var pos = getMousePosition(evt);
+    var pt = new Point(pos.x, pos.y);
+    console.info(`Enviando punto a ${drawingId}: `, pt);
+
+    addPointToCanvas(pt);
+
+    var topic = `/topic/newpoint.${drawingId}`;
+    stompClient.send(topic, {}, JSON.stringify(pt));
+});
+````
 4. Rectifique que se puedan realizar dos dibujos de forma independiente, cada uno de éstos entre dos o más clientes.
 
 	```bash
 	git commit -m "PARTE 3".
 	```
+Realizamos la prueba:
 
+- Los dos dibujos con id 1
+
+![id1Draws.png](img/id1Draws.png)
+
+- Los dos dibujos con id 2
+
+![id2Draws.png](img/id2Draws.png)
+
+- Dibujos con id diferente
+
+![idDifDraws.png](img/idDifDraws.png)
 
 ## Parte IV.
 
 Para la parte IV, usted va  a implementar una versión extendida del modelo de actividades y eventos anterior, en la que el servidor (que hasta ahora sólo fungía como Broker o MOM -Message Oriented Middleware-) se volverá también suscriptor de ciertos eventos, para a partir de los mismos agregar la funcionalidad de 'dibujo colaborativo de polígonos':
-
 ![](img/P2-AD.png)
 
 Para esto, se va a hacer una configuración alterna en la que, en lugar de que se propaguen los mensajes 'newpoint.{numdibujo}' entre todos los clientes, éstos sean recibidos y procesados primero por el servidor, de manera que se pueda decidir qué hacer con los mismos. 
