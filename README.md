@@ -459,6 +459,9 @@ Se ajusta el condicional dentro del método handlePointEvent en la clase STOMPMe
 
 4.  A partir de los diagramas dados en el archivo ASTAH incluido, haga un nuevo diagrama de actividades correspondiente a lo realizado hasta este punto, teniendo en cuenta el detalle de que ahora se tendrán tópicos dinámicos para manejar diferentes dibujos simultáneamente.
 
+![](img/dinamicTopics.png)
+
+
 5.  Haga commit de lo realizado.
 
     ```bash
